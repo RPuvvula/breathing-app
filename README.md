@@ -2,9 +2,6 @@
 
 A modern, calming, and configurable web application to guide users through the Wim Hof Method breathing technique. This app is designed to be mobile-first, fully responsive, and works offline after the first visit.
 
-![App Screenshot](https://user-images.githubusercontent.com/1063335/191832673-88226075-a868-45e0-9031-62d47a51804b.png)
-_(Note: Screenshot is a representative placeholder)_
-
 ## ✨ Features
 
 - **Guided Sessions:** Step-by-step guidance for each phase: Power Breaths, Retention, and Recovery.
