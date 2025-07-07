@@ -67,6 +67,81 @@ This project is configured to run directly in the browser without any build step
 
 The application will open in your default browser, and the page will automatically reload whenever you save a file.
 
+## 🌐 Deploying to GitHub Pages
+
+You can publish this app to GitHub Pages for free static hosting. Follow these steps:
+
+### 1. Configure the Repository
+
+- Ensure your repository is **public** on GitHub.
+- In your `package.json`, add a `homepage` field (replace with your actual username and repo name):
+
+  ```json
+  "homepage": "https://your-username.github.io/breathing-app"
+  ```
+
+- Your `vite.config.ts` should already have the correct base:
+  ```ts
+  base: '/breathing-app/',
+  ```
+
+### 2. Update Asset Paths (if needed)
+
+- In `index.html`, change any absolute asset paths (e.g., `/index.css`) to relative paths (e.g., `index.css`) so assets load correctly on GitHub Pages.
+
+### 3. Install gh-pages
+
+Install the `gh-pages` package as a dev dependency:
+
+```bash
+npm install --save-dev gh-pages
+```
+
+### 4. Add Deploy Scripts
+
+Add these scripts to your `package.json`:
+
+```json
+"scripts": {
+  "predeploy": "npm run build",
+  "deploy": "gh-pages -d dist"
+}
+```
+
+### 5. Deploy to GitHub Pages
+
+Run the following command to build and publish your app:
+
+```bash
+npm run deploy
+```
+
+This will push the contents of the `dist` folder to a `gh-pages` branch on your repository.
+
+### 6. Enable GitHub Pages
+
+- Go to your repository on GitHub.
+- Click **Settings** > **Pages**.
+- Under "Source", select the `gh-pages` branch and `/ (root)` folder.
+- Save.
+
+Your app will be available at:  
+`https://your-username.github.io/breathing-app/`
+
+---
+
+### 🚩 After the First Build
+
+- For future updates, simply run `npm run deploy` again after making changes.
+- No need to repeat the setup steps; just commit your changes and redeploy.
+
+---
+
+**Note:**
+
+- If you change your repo name or username, update the `homepage` and `base` fields accordingly.
+- If you see a blank page after deployment, double-check that all asset paths in `index.html` are relative and that the `base` is set correctly in
+
 ## ⚠️ Important Safety Notice
 
 This breathing method is powerful and should be practiced with caution.
