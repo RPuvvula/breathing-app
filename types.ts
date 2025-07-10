@@ -29,8 +29,6 @@ export interface SessionRecord {
 export enum BackgroundMusicType {
   Off = "off",
   AmbientHum = "hum",
-  ZenGarden = "zen",
-  OceanWaves = "ocean",
   TibetanSingingBowl = "TibetanSingingBowl",
   BreathingBell = "BreathingBell",
   GentleRain = "Meditation",

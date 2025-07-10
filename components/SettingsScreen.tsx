@@ -104,8 +104,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const musicOptions = [
     { value: BackgroundMusicType.Off, label: "Off" },
     { value: BackgroundMusicType.AmbientHum, label: "Hum" },
-    { value: BackgroundMusicType.ZenGarden, label: "Zen" },
-    { value: BackgroundMusicType.OceanWaves, label: "Ocean" },
     { value: BackgroundMusicType.TibetanSingingBowl, label: "Bowl" },
     { value: BackgroundMusicType.BreathingBell, label: "Bell" },
     { value: BackgroundMusicType.GentleRain, label: "Meditation" },

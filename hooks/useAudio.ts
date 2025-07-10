@@ -141,63 +141,6 @@ export const useAudio = () => {
           allNodes.push(osc1, osc2);
           break;
 
-        case BackgroundMusicType.ZenGarden:
-          masterGain.gain.linearRampToValueAtTime(0.3, context.currentTime + 1); // Chimes are quiet
-          const playChime = () => {
-            const now = context.currentTime;
-            const osc = context.createOscillator();
-            osc.type = "sine";
-            osc.frequency.setValueAtTime(987.77, now); // B5
-            const gain = context.createGain();
-            gain.gain.setValueAtTime(0, now);
-            gain.gain.linearRampToValueAtTime(1, now + 0.01);
-            gain.gain.exponentialRampToValueAtTime(0.0001, now + 8);
-            osc.connect(gain).connect(masterGain);
-            osc.start(now);
-            osc.stop(now + 8);
-          };
-          playChime(); // Play one immediately
-          intervalId = setInterval(playChime, 12000 + Math.random() * 5000);
-          break;
-
-        case BackgroundMusicType.OceanWaves:
-          masterGain.gain.linearRampToValueAtTime(0.4, context.currentTime + 3);
-          const bufferSize = 4096;
-          const noiseBuffer = context.createBuffer(
-            1,
-            bufferSize,
-            context.sampleRate
-          );
-          const output = noiseBuffer.getChannelData(0);
-          for (let i = 0; i < bufferSize; i++) {
-            output[i] = Math.random() * 2 - 1; // White noise
-          }
-
-          const whiteNoise = context.createBufferSource();
-          whiteNoise.buffer = noiseBuffer;
-          whiteNoise.loop = true;
-
-          const filter = context.createBiquadFilter();
-          filter.type = "lowpass";
-          filter.Q.value = 1;
-          filter.frequency.value = 800;
-
-          const lfo = context.createOscillator();
-          lfo.type = "sine";
-          lfo.frequency.value = 0.2; // Slow waves
-
-          const lfoGain = context.createGain();
-          lfoGain.gain.value = 400; // How much the LFO affects the filter frequency
-
-          lfo.connect(lfoGain);
-          lfoGain.connect(filter.frequency);
-          whiteNoise.connect(filter).connect(masterGain);
-
-          lfo.start();
-          whiteNoise.start();
-          allNodes.push(whiteNoise, filter, lfo, lfoGain);
-          break;
-
         case BackgroundMusicType.TibetanSingingBowl:
           masterGain.gain.linearRampToValueAtTime(0.3, context.currentTime + 2);
 
@@ -233,6 +176,7 @@ export const useAudio = () => {
             });
           };
 
+          playBowl();
           intervalId = setInterval(playBowl, 12000 + Math.random() * 5000);
           break;
 
