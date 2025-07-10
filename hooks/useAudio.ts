@@ -257,6 +257,40 @@ export const useAudio = () => {
             return;
           }
           break;
+
+        case BackgroundMusicType.OmChant:
+          try {
+            const response = await fetch("./audio/om.mp3");
+            if (isCancelled()) return;
+
+            const arrayBuffer = await response.arrayBuffer();
+            if (isCancelled()) return;
+
+            const audioBuffer = await context.decodeAudioData(arrayBuffer);
+            if (isCancelled()) return;
+
+            const source = context.createBufferSource();
+            source.buffer = audioBuffer;
+            source.loop = true;
+
+            source.connect(masterGain);
+            source.start();
+
+            masterGain.gain.linearRampToValueAtTime(
+              0.3,
+              context.currentTime + 3
+            ); // Fade in
+            allNodes.push(source);
+          } catch (error) {
+            if (!isCancelled()) {
+              console.error(
+                "Error loading or playing local audio file:",
+                error
+              );
+            }
+            return;
+          }
+          break;
       }
 
       if (isCancelled()) {
