@@ -1,7 +1,6 @@
-
 export enum Theme {
-  Light = 'light',
-  Dark = 'dark',
+  Light = "light",
+  Dark = "dark",
 }
 
 export enum Screen {
@@ -16,6 +15,7 @@ export enum Phase {
   Breathing,
   Retention,
   Recovery,
+  Transition,
   Finished,
 }
 
@@ -27,10 +27,10 @@ export interface SessionRecord {
 }
 
 export enum BackgroundMusicType {
-  Off = 'off',
-  AmbientHum = 'hum',
-  ZenGarden = 'zen',
-  OceanWaves = 'ocean',
+  Off = "off",
+  AmbientHum = "hum",
+  ZenGarden = "zen",
+  OceanWaves = "ocean",
 }
 
 export interface AppSettings {

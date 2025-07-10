@@ -1,7 +1,6 @@
-
-import React, { useState, useEffect, useCallback } from 'react';
-import { Phase, BackgroundMusicType } from '../types';
-import { useAudio } from '../hooks/useAudio';
+import React, { useState, useEffect, useCallback } from "react";
+import { Phase, BackgroundMusicType } from "../types";
+import { useAudio } from "../hooks/useAudio";
 
 interface SessionScreenProps {
   breathsPerRound: number;
@@ -12,12 +11,14 @@ interface SessionScreenProps {
 }
 
 const formatTime = (seconds: number) => {
-  const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
-  const secs = (seconds % 60).toString().padStart(2, '0');
+  const mins = Math.floor(seconds / 60)
+    .toString()
+    .padStart(2, "0");
+  const secs = (seconds % 60).toString().padStart(2, "0");
   return `${mins}:${secs}`;
 };
 
-const isBrowser = typeof window !== 'undefined';
+const isBrowser = typeof window !== "undefined";
 
 export const SessionScreen: React.FC<SessionScreenProps> = ({
   breathsPerRound,
@@ -31,21 +32,26 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
   const [breathCount, setBreathCount] = useState(0);
   const [timer, setTimer] = useState(0);
   const [retentionTimes, setRetentionTimes] = useState<number[]>([]);
-  const { playSound, speak, startBackgroundMusic, stopBackgroundMusic } = useAudio();
+  const { playSound, speak, startBackgroundMusic, stopBackgroundMusic } =
+    useAudio();
 
   const instructionText = {
     [Phase.Preparing]: `Get ready for Round ${currentRound}`,
-    [Phase.Breathing]: 'Breathe deeply... In... Out...',
-    [Phase.Retention]: 'Hold your breath...',
-    [Phase.Recovery]: 'Quickly inhale and hold',
-    [Phase.Finished]: 'Session Complete!',
+    [Phase.Breathing]: "Breathe deeply... In... Out...",
+    [Phase.Retention]: "Hold your breath...",
+    [Phase.Recovery]: "Quickly inhale and hold",
+    [Phase.Transition]: "Release breath hold... let it go.",
+    [Phase.Finished]: "Session Complete!",
   };
 
-  const speakIfEnabled = useCallback((text: string) => {
-    if (enableSpokenGuidance) {
-      speak(text);
-    }
-  }, [enableSpokenGuidance, speak]);
+  const speakIfEnabled = useCallback(
+    (text: string) => {
+      if (enableSpokenGuidance) {
+        speak(text);
+      }
+    },
+    [enableSpokenGuidance, speak]
+  );
 
   useEffect(() => {
     if (backgroundMusicType !== BackgroundMusicType.Off) {
@@ -54,8 +60,8 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
     return () => {
       stopBackgroundMusic();
       // Ensure any lingering speech is cut off
-      if(isBrowser && 'speechSynthesis' in window) {
-          window.speechSynthesis.cancel();
+      if (isBrowser && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
       }
     };
   }, [backgroundMusicType, startBackgroundMusic, stopBackgroundMusic]);
@@ -69,7 +75,7 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
 
   const handleFinishSession = useCallback(() => {
     setPhase(Phase.Finished);
-    speakIfEnabled('Session complete. Well done.');
+    speakIfEnabled("Session complete. Well done.");
     setTimeout(() => onFinish(retentionTimes), 2000);
   }, [onFinish, retentionTimes, speakIfEnabled]);
 
@@ -82,32 +88,34 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
         setPhase(Phase.Breathing);
       }, 3000);
     } else if (phase === Phase.Breathing) {
-        if (breathCount === 0) {
-            speakIfEnabled('Begin breathing.');
-        }
-      playSound(breathCount % 2 === 0 ? 'inhale' : 'exhale');
+      if (breathCount === 0) {
+        speakIfEnabled("Begin breathing.");
+      }
+      playSound(breathCount % 2 === 0 ? "inhale" : "exhale");
       if (breathCount >= breathsPerRound * 2) {
         setPhase(Phase.Retention);
       } else {
         interval = setTimeout(() => setBreathCount((c) => c + 1), 2000);
       }
     } else if (phase === Phase.Retention) {
-        if(timer === 0) { // only speak on first render of this phase
-            speakIfEnabled('Exhale, and hold.');
-            playSound('hold');
-        }
+      if (timer === 0) {
+        // only speak on first render of this phase
+        speakIfEnabled("Exhale, and hold.");
+        playSound("hold");
+      }
       interval = setInterval(() => setTimer((t) => t + 1), 1000);
     } else if (phase === Phase.Recovery) {
-      if (timer === 0) { // only on first render
-          setTimer(15);
-          speakIfEnabled('Inhale, and hold for 15 seconds.');
+      if (timer === 0) {
+        // only on first render
+        setTimer(15);
+        speakIfEnabled("Inhale, and hold for 15 seconds.");
       }
       interval = setInterval(() => {
         setTimer((t) => {
           if (t <= 1) {
-            playSound('chime');
+            playSound("chime");
             if (currentRound < totalRounds) {
-              resetForNextRound();
+              setPhase(Phase.Transition);
             } else {
               handleFinishSession();
             }
@@ -116,26 +124,46 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
           return t - 1;
         });
       }, 1000);
+    } else if (phase === Phase.Transition) {
+      speakIfEnabled("Release breath hold... let it go.");
+      interval = setTimeout(() => {
+        resetForNextRound();
+      }, 5000); // 5 second pause
     }
 
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [phase, breathCount, currentRound, totalRounds, breathsPerRound, playSound, speakIfEnabled, handleFinishSession, resetForNextRound, timer]);
+  }, [
+    phase,
+    breathCount,
+    currentRound,
+    totalRounds,
+    breathsPerRound,
+    playSound,
+    speakIfEnabled,
+    handleFinishSession,
+    resetForNextRound,
+    timer,
+  ]);
 
   const handleRetentionEnd = () => {
     setRetentionTimes((times) => [...times, timer]);
     setTimer(0); // Reset timer for recovery phase
     setPhase(Phase.Recovery);
-    playSound('chime');
+    playSound("chime");
   };
 
   const getCircleAnimation = () => {
     switch (phase) {
-      case Phase.Breathing: return breathCount % 2 === 0 ? 'animate-inhale' : 'animate-exhale';
-      case Phase.Recovery: return 'scale-110';
-      case Phase.Retention: return 'scale-90';
-      default: return 'scale-100';
+      case Phase.Breathing:
+        return breathCount % 2 === 0 ? "animate-inhale" : "animate-exhale";
+      case Phase.Recovery:
+        return "scale-110";
+      case Phase.Retention:
+        return "scale-90";
+      default:
+        return "scale-100";
     }
   };
 
@@ -147,11 +175,17 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
         @keyframes inhale { from { transform: scale(1); } to { transform: scale(1.15); } }
         @keyframes exhale { from { transform: scale(1.15); } to { transform: scale(1); } }
       `}</style>
-      
+
       <div className="w-full flex justify-between items-center">
-        <span className="text-lg font-medium">Round: {currentRound > totalRounds ? totalRounds : currentRound}/{totalRounds}</span>
-         <button onClick={() => onFinish(retentionTimes)} className="bg-red-500/50 hover:bg-red-500 text-white font-bold py-2 px-4 rounded-full transition-colors">
-            End
+        <span className="text-lg font-medium">
+          Round: {currentRound > totalRounds ? totalRounds : currentRound}/
+          {totalRounds}
+        </span>
+        <button
+          onClick={() => onFinish(retentionTimes)}
+          className="bg-red-500/50 hover:bg-red-500 text-white font-bold py-2 px-4 rounded-full transition-colors"
+        >
+          End
         </button>
       </div>
 
@@ -162,7 +196,9 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
           <div className="absolute w-full h-full rounded-full border-2 border-white/20"></div>
           <div className="text-center">
             {phase === Phase.Breathing && (
-              <span className="text-7xl font-bold">{Math.ceil((breathCount+1) / 2)}</span>
+              <span className="text-7xl font-bold">
+                {Math.ceil((breathCount + 1) / 2)}
+              </span>
             )}
             {(phase === Phase.Retention || phase === Phase.Finished) && (
               <span className="text-7xl font-mono">{formatTime(timer)}</span>
