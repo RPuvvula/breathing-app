@@ -155,3 +155,9 @@ Contributions, issues, and feature requests are welcome! Feel free to check the 
 ## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE.md file for details.
+
+## 🎵 Audio Credits
+
+Some of Background music and sound effects used in this app are sourced from [Pixabay](https://pixabay.com/music/) and are used under the Pixabay Content License.
+
+Please visit [pixabay.com/music](https://pixabay.com/music/) for more royalty-free music.
