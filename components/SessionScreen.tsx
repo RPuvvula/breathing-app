@@ -7,6 +7,7 @@ interface SessionScreenProps {
   totalRounds: number;
   enableSpokenGuidance: boolean;
   backgroundMusicType: BackgroundMusicType;
+  fastPacedBreathing: boolean;
   onFinish: (retentionTimes: number[]) => void;
 }
 
@@ -25,6 +26,7 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
   totalRounds,
   enableSpokenGuidance,
   backgroundMusicType,
+  fastPacedBreathing,
   onFinish,
 }) => {
   const [phase, setPhase] = useState<Phase>(Phase.Preparing);
@@ -81,6 +83,7 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
 
   useEffect(() => {
     let interval: ReturnType<typeof setTimeout> | null = null;
+    const breathDuration = fastPacedBreathing ? 1600 : 2000;
 
     if (phase === Phase.Preparing) {
       speakIfEnabled(`Get ready for Round ${currentRound}.`);
@@ -95,7 +98,10 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
       if (breathCount >= breathsPerRound * 2) {
         setPhase(Phase.Retention);
       } else {
-        interval = setTimeout(() => setBreathCount((c) => c + 1), 2000);
+        interval = setTimeout(
+          () => setBreathCount((c) => c + 1),
+          breathDuration
+        );
       }
     } else if (phase === Phase.Retention) {
       if (timer === 0) {
@@ -145,6 +151,7 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
     handleFinishSession,
     resetForNextRound,
     timer,
+    fastPacedBreathing,
   ]);
 
   const handleRetentionEnd = () => {
@@ -167,11 +174,13 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
     }
   };
 
+  const breathAnimationDuration = fastPacedBreathing ? 1.6 : 2;
+
   return (
     <div className="flex flex-col items-center justify-between min-h-full p-4 text-white text-center select-none bg-gradient-to-br from-gray-900 to-blue-900">
       <style>{`
-        .animate-inhale { animation: inhale 2s ease-in-out forwards; }
-        .animate-exhale { animation: exhale 2s ease-in-out forwards; }
+        .animate-inhale { animation: inhale ${breathAnimationDuration}s ease-in-out forwards; }
+        .animate-exhale { animation: exhale ${breathAnimationDuration}s ease-in-out forwards; }
         @keyframes inhale { from { transform: scale(1); } to { transform: scale(1.15); } }
         @keyframes exhale { from { transform: scale(1.15); } to { transform: scale(1); } }
       `}</style>

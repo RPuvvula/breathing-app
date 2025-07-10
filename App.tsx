@@ -1,24 +1,32 @@
+import { useState, useEffect, useCallback } from "react";
+import {
+  Theme,
+  Screen,
+  SessionRecord,
+  AppSettings,
+  BackgroundMusicType,
+} from "./types";
+import { SettingsScreen } from "./components/SettingsScreen";
+import { SessionScreen } from "./components/SessionScreen";
+import { InfoScreen } from "./components/InfoScreen";
+import { HistoryScreen } from "./components/HistoryScreen";
+import { SunIcon, MoonIcon, InfoIcon, CloseIcon } from "./components/Icons";
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { Theme, Screen, SessionRecord, AppSettings, BackgroundMusicType } from './types';
-import { SettingsScreen } from './components/SettingsScreen';
-import { SessionScreen } from './components/SessionScreen';
-import { InfoScreen } from './components/InfoScreen';
-import { HistoryScreen } from './components/HistoryScreen';
-import { SunIcon, MoonIcon, InfoIcon, CloseIcon } from './components/Icons';
-
-const SETTINGS_STORAGE_KEY = 'wimhof-settings';
-const SESSION_STORAGE_KEY = 'wimhof-sessions';
+const SETTINGS_STORAGE_KEY = "wimhof-settings";
+const SESSION_STORAGE_KEY = "wimhof-sessions";
 
 const defaultSettings: AppSettings = {
-    breathsPerRound: 30,
-    totalRounds: 3,
-    enableSpokenGuidance: true,
-    backgroundMusicType: BackgroundMusicType.Off,
+  breathsPerRound: 30,
+  totalRounds: 3,
+  enableSpokenGuidance: true,
+  backgroundMusicType: BackgroundMusicType.Off,
+  fastPacedBreathing: false,
 };
 
 function App() {
-  const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem('theme') as Theme) || Theme.Light);
+  const [theme, setTheme] = useState<Theme>(
+    () => (localStorage.getItem("theme") as Theme) || Theme.Light
+  );
   const [screen, setScreen] = useState<Screen>(Screen.Settings);
 
   const [settings, setSettings] = useState<AppSettings>(() => {
@@ -27,9 +35,11 @@ function App() {
       if (storedSettings) {
         const parsed = JSON.parse(storedSettings);
         // Migration from old setting
-        if (parsed.hasOwnProperty('enableBackgroundMusic')) {
-            parsed.backgroundMusicType = parsed.enableBackgroundMusic ? BackgroundMusicType.AmbientHum : BackgroundMusicType.Off;
-            delete parsed.enableBackgroundMusic;
+        if (parsed.hasOwnProperty("enableBackgroundMusic")) {
+          parsed.backgroundMusicType = parsed.enableBackgroundMusic
+            ? BackgroundMusicType.AmbientHum
+            : BackgroundMusicType.Off;
+          delete parsed.enableBackgroundMusic;
         }
         return { ...defaultSettings, ...parsed };
       }
@@ -44,19 +54,19 @@ function App() {
   useEffect(() => {
     const root = window.document.documentElement;
     if (theme === Theme.Dark) {
-      root.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
+      root.classList.add("dark");
+      localStorage.setItem("theme", "dark");
     } else {
-      root.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
+      root.classList.remove("dark");
+      localStorage.setItem("theme", "light");
     }
   }, [theme]);
-  
+
   useEffect(() => {
     try {
-        localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
     } catch (error) {
-        console.error("Failed to save settings to local storage", error);
+      console.error("Failed to save settings to local storage", error);
     }
   }, [settings]);
 
@@ -75,29 +85,35 @@ function App() {
     setTheme(theme === Theme.Light ? Theme.Dark : Theme.Light);
   };
 
-  const handleFinishSession = useCallback((retentionTimes: number[]) => {
-    if (retentionTimes.length > 0) {
-      const newSession: SessionRecord = {
-        id: new Date().toISOString(),
-        date: new Date().toISOString(),
-        rounds: retentionTimes.length,
-        retentionTimes,
-      };
-      const updatedHistory = [newSession, ...sessionHistory];
-      setSessionHistory(updatedHistory);
-      try {
-        localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(updatedHistory));
-      } catch (error) {
-        console.error("Failed to save session to local storage", error);
+  const handleFinishSession = useCallback(
+    (retentionTimes: number[]) => {
+      if (retentionTimes.length > 0) {
+        const newSession: SessionRecord = {
+          id: new Date().toISOString(),
+          date: new Date().toISOString(),
+          rounds: retentionTimes.length,
+          retentionTimes,
+        };
+        const updatedHistory = [newSession, ...sessionHistory];
+        setSessionHistory(updatedHistory);
+        try {
+          localStorage.setItem(
+            SESSION_STORAGE_KEY,
+            JSON.stringify(updatedHistory)
+          );
+        } catch (error) {
+          console.error("Failed to save session to local storage", error);
+        }
       }
-    }
-    setScreen(Screen.Settings);
-  }, [sessionHistory]);
-  
+      setScreen(Screen.Settings);
+    },
+    [sessionHistory]
+  );
+
   const navigate = (targetScreen: Screen) => setScreen(targetScreen);
 
   const handleSettingsChange = (newSettings: Partial<AppSettings>) => {
-    setSettings(prev => ({ ...prev, ...newSettings }));
+    setSettings((prev) => ({ ...prev, ...newSettings }));
   };
 
   const renderScreen = () => {
@@ -109,13 +125,19 @@ function App() {
             totalRounds={settings.totalRounds}
             enableSpokenGuidance={settings.enableSpokenGuidance}
             backgroundMusicType={settings.backgroundMusicType}
+            fastPacedBreathing={settings.fastPacedBreathing}
             onFinish={handleFinishSession}
           />
         );
       case Screen.Info:
         return <InfoScreen onClose={() => navigate(Screen.Settings)} />;
       case Screen.History:
-        return <HistoryScreen sessions={sessionHistory} onClose={() => navigate(Screen.Settings)} />;
+        return (
+          <HistoryScreen
+            sessions={sessionHistory}
+            onClose={() => navigate(Screen.Settings)}
+          />
+        );
       case Screen.Settings:
       default:
         return (
@@ -130,28 +152,34 @@ function App() {
         );
     }
   };
-  
+
   const showHeader = screen === Screen.Settings;
 
   return (
     <main className="h-screen w-screen font-sans text-gray-900 dark:text-gray-100 bg-gray-100 dark:bg-gray-900">
       {showHeader && (
         <header className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-10">
-            <button onClick={() => navigate(Screen.Info)} aria-label="Show info" className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-                <InfoIcon className="h-6 w-6 text-gray-600 dark:text-gray-400" />
-            </button>
-            <button onClick={toggleTheme} aria-label="Toggle theme" className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-            {theme === 'light' ? (
-                <MoonIcon className="h-6 w-6 text-gray-600 dark:text-gray-400" />
+          <button
+            onClick={() => navigate(Screen.Info)}
+            aria-label="Show info"
+            className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          >
+            <InfoIcon className="h-6 w-6 text-gray-600 dark:text-gray-400" />
+          </button>
+          <button
+            onClick={toggleTheme}
+            aria-label="Toggle theme"
+            className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          >
+            {theme === "light" ? (
+              <MoonIcon className="h-6 w-6 text-gray-600 dark:text-gray-400" />
             ) : (
-                <SunIcon className="h-6 w-6 text-gray-600 dark:text-gray-400" />
+              <SunIcon className="h-6 w-6 text-gray-600 dark:text-gray-400" />
             )}
-            </button>
+          </button>
         </header>
       )}
-      <div className="h-full w-full">
-        {renderScreen()}
-      </div>
+      <div className="h-full w-full">{renderScreen()}</div>
     </main>
   );
 }

@@ -38,4 +38,5 @@ export interface AppSettings {
   totalRounds: number;
   enableSpokenGuidance: boolean;
   backgroundMusicType: BackgroundMusicType;
+  fastPacedBreathing: boolean;
 }
