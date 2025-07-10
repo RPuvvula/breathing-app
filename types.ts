@@ -31,6 +31,8 @@ export enum BackgroundMusicType {
   AmbientHum = "hum",
   ZenGarden = "zen",
   OceanWaves = "ocean",
+  TibetanSingingBowl = "TibetanSingingBowl",
+  BreathingBell = "BreathingBell",
 }
 
 export interface AppSettings {
