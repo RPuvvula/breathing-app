@@ -181,7 +181,7 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
   const breathAnimationDuration = fastPacedBreathing ? 1.6 : 2;
 
   return (
-    <div className="flex flex-col items-center justify-between min-h-full p-4 text-white text-center select-none bg-gradient-to-br from-gray-900 to-blue-900">
+    <div className="flex flex-col items-center h-full p-4 text-white text-center select-none bg-gradient-to-br from-gray-900 to-blue-900">
       <style>{`
         .animate-inhale { animation: inhale ${breathAnimationDuration}s ease-in-out forwards; }
         .animate-exhale { animation: exhale ${breathAnimationDuration}s ease-in-out forwards; }
@@ -189,7 +189,8 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
         @keyframes exhale { from { transform: scale(1.15); } to { transform: scale(1); } }
       `}</style>
 
-      <div className="w-full flex justify-between items-center">
+      {/* Header */}
+      <div className="w-full flex justify-between items-center flex-shrink-0">
         <span className="text-lg font-medium">
           Round: {currentRound > totalRounds ? totalRounds : currentRound}/
           {totalRounds}
@@ -202,37 +203,42 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
         </button>
       </div>
 
-      <div className="flex flex-col items-center justify-center space-y-4">
-        <div
-          className={`relative w-64 h-64 sm:w-80 sm:h-80 rounded-full bg-white/10 flex items-center justify-center transition-transform duration-1000 ease-in-out ${getCircleAnimation()}`}
-        >
-          <div className="absolute w-full h-full rounded-full border-2 border-white/20"></div>
-          <div className="text-center">
-            {phase === Phase.Breathing && (
-              <span className="text-7xl font-bold">
-                {Math.ceil((breathCount + 1) / 2)}
-              </span>
-            )}
-            {(phase === Phase.Retention || phase === Phase.Finished) && (
-              <span className="text-7xl font-mono">{formatTime(timer)}</span>
-            )}
-            {phase === Phase.Recovery && (
-              <span className="text-7xl font-mono">{timer}</span>
+      {/* Main Content Wrapper - this grows to fill space and centers its content */}
+      <div className="flex-grow flex flex-col items-center justify-center w-full">
+        <div className="flex flex-col items-center justify-center">
+          <div
+            className={`relative w-64 h-64 sm:w-80 sm:h-80 rounded-full bg-white/10 flex items-center justify-center transition-transform duration-1000 ease-in-out ${getCircleAnimation()}`}
+          >
+            <div className="absolute w-full h-full rounded-full border-2 border-white/20"></div>
+            <div className="text-center">
+              {phase === Phase.Breathing && (
+                <span className="text-7xl font-bold">
+                  {Math.ceil((breathCount + 1) / 2)}
+                </span>
+              )}
+              {(phase === Phase.Retention || phase === Phase.Finished) && (
+                <span className="text-7xl font-mono">{formatTime(timer)}</span>
+              )}
+              {phase === Phase.Recovery && (
+                <span className="text-7xl font-mono">{timer}</span>
+              )}
+            </div>
+          </div>
+          <p className="text-2xl font-light h-16 mt-4 flex items-center justify-center">
+            {instructionText[phase]}
+          </p>
+
+          <div className="h-20 flex items-center justify-center mt-2">
+            {phase === Phase.Retention && (
+              <button
+                onClick={handleRetentionEnd}
+                className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-12 rounded-full text-xl shadow-lg transform hover:scale-105 transition-transform"
+              >
+                END HOLD
+              </button>
             )}
           </div>
         </div>
-        <p className="text-2xl font-light h-16">{instructionText[phase]}</p>
-      </div>
-
-      <div className="h-20 w-full flex items-center justify-center">
-        {phase === Phase.Retention && (
-          <button
-            onClick={handleRetentionEnd}
-            className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-12 rounded-full text-xl shadow-lg transform hover:scale-105 transition-transform"
-          >
-            END HOLD
-          </button>
-        )}
       </div>
     </div>
   );
