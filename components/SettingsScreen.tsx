@@ -108,6 +108,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     { value: BackgroundMusicType.OceanWaves, label: "Ocean" },
     { value: BackgroundMusicType.TibetanSingingBowl, label: "Bowl" },
     { value: BackgroundMusicType.BreathingBell, label: "Bell" },
+    { value: BackgroundMusicType.GentleRain, label: "Meditation" },
   ];
 
   return (

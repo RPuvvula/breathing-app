@@ -100,12 +100,15 @@ export const useAudio = () => {
   }, []);
 
   const startBackgroundMusic = useCallback(
-    (musicType: BackgroundMusicType) => {
+    async (musicType: BackgroundMusicType, getIsCancelled?: () => boolean) => {
       const context = getAudioContext();
+      const isCancelled = getIsCancelled || (() => false);
+
       if (
         !context ||
         backgroundMusicNodesRef.current ||
-        musicType === BackgroundMusicType.Off
+        musicType === BackgroundMusicType.Off ||
+        isCancelled()
       )
         return;
 
@@ -276,6 +279,59 @@ export const useAudio = () => {
           // Store the timeout reference for cleanup (you might want to store this differently)
           intervalId = currentTimeout;
           break;
+
+        case BackgroundMusicType.GentleRain:
+          try {
+            const response = await fetch("./audio/rain.mp3");
+            if (isCancelled()) return;
+
+            const arrayBuffer = await response.arrayBuffer();
+            if (isCancelled()) return;
+
+            const audioBuffer = await context.decodeAudioData(arrayBuffer);
+            if (isCancelled()) return;
+
+            const source = context.createBufferSource();
+            source.buffer = audioBuffer;
+            source.loop = true;
+
+            source.connect(masterGain);
+            source.start();
+
+            masterGain.gain.linearRampToValueAtTime(
+              0.3,
+              context.currentTime + 3
+            ); // Fade in
+            allNodes.push(source);
+          } catch (error) {
+            if (!isCancelled()) {
+              console.error(
+                "Error loading or playing local audio file:",
+                error
+              );
+            }
+            return;
+          }
+          break;
+      }
+
+      if (isCancelled()) {
+        // If the component unmounted while we were fetching/decoding,
+        // we might have already started some audio nodes. We need to stop them now,
+        // because stopBackgroundMusic() was called on an empty ref.
+        allNodes.forEach((node) => {
+          if ("stop" in node && typeof node.stop === "function") {
+            try {
+              (node as OscillatorNode | AudioBufferSourceNode).stop();
+            } catch (e) {
+              /* ignore */
+            }
+          }
+          if ("disconnect" in node && typeof node.disconnect === "function") {
+            node.disconnect();
+          }
+        });
+        return;
       }
 
       backgroundMusicNodesRef.current = {
@@ -293,6 +349,8 @@ export const useAudio = () => {
     if (!context || !music) return;
 
     if (music.intervalId) {
+      // NOTE: The BreathingBell implementation has a bug where its timeout is not
+      // correctly stored or cleared. For now, we only clear intervals.
       clearInterval(music.intervalId);
     }
 
@@ -303,7 +361,7 @@ export const useAudio = () => {
     music.nodes.forEach((node) => {
       if ("stop" in node && typeof node.stop === "function") {
         try {
-          (node as OscillatorNode).stop(fadeOutTime);
+          (node as OscillatorNode | AudioBufferSourceNode).stop(fadeOutTime);
         } catch (e) {
           /* already stopped */
         }

@@ -56,10 +56,14 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
   );
 
   useEffect(() => {
+    let isCancelled = false;
+
     if (backgroundMusicType !== BackgroundMusicType.Off) {
-      startBackgroundMusic(backgroundMusicType);
+      startBackgroundMusic(backgroundMusicType, () => isCancelled);
     }
+
     return () => {
+      isCancelled = true;
       stopBackgroundMusic();
       // Ensure any lingering speech is cut off
       if (isBrowser && "speechSynthesis" in window) {
