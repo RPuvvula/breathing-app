@@ -243,7 +243,7 @@ export const useAudio = () => {
             source.start();
 
             masterGain.gain.linearRampToValueAtTime(
-              0.3,
+              0.08, // Lower volume for background
               context.currentTime + 3
             ); // Fade in
             allNodes.push(source);
@@ -277,7 +277,7 @@ export const useAudio = () => {
             source.start();
 
             masterGain.gain.linearRampToValueAtTime(
-              0.3,
+              0.05, // Lower volume for background
               context.currentTime + 3
             ); // Fade in
             allNodes.push(source);
