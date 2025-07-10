@@ -158,14 +158,7 @@ function App() {
   return (
     <main className="h-screen w-screen font-sans text-gray-900 dark:text-gray-100 bg-gray-100 dark:bg-gray-900">
       {showHeader && (
-        <header className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-10">
-          <button
-            onClick={() => navigate(Screen.Info)}
-            aria-label="Show info"
-            className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-          >
-            <InfoIcon className="h-6 w-6 text-gray-600 dark:text-gray-400" />
-          </button>
+        <header className="absolute top-0 left-0 right-0 p-4 flex justify-end items-center z-10">
           <button
             onClick={toggleTheme}
             aria-label="Toggle theme"

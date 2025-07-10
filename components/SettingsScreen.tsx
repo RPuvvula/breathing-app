@@ -111,102 +111,117 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   ];
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-full p-4 sm:p-6 text-center">
-      <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 sm:p-8 space-y-8">
-        <div>
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white">
-            Breathing Session
-          </h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">
-            Configure your session and find your inner strength.
-          </p>
-        </div>
-
-        <div className="space-y-6">
-          <Slider
-            label="Breaths per Round"
-            value={settings.breathsPerRound}
-            min={20}
-            max={50}
-            step={5}
-            onChange={(e) =>
-              onSettingsChange({ breathsPerRound: Number(e.target.value) })
-            }
-          />
-          <Slider
-            label="Number of Rounds"
-            value={settings.totalRounds}
-            min={1}
-            max={5}
-            step={1}
-            onChange={(e) =>
-              onSettingsChange({ totalRounds: Number(e.target.value) })
-            }
-          />
-        </div>
-
-        <div className="border-t border-gray-200 dark:border-gray-700 pt-6 space-y-6">
-          <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200 text-left">
-            Experience
-          </h3>
-          <Toggle
-            label="Spoken Guidance"
-            checked={settings.enableSpokenGuidance}
-            onChange={(e) =>
-              onSettingsChange({ enableSpokenGuidance: e.target.checked })
-            }
-          />
-          <Toggle
-            label="Fast Paced Breaths"
-            checked={settings.fastPacedBreathing}
-            onChange={(e) =>
-              onSettingsChange({ fastPacedBreathing: e.target.checked })
-            }
-          />
-          <OptionSelector
-            label="Calm Background"
-            options={musicOptions}
-            selectedValue={settings.backgroundMusicType}
-            onChange={(value) =>
-              onSettingsChange({
-                backgroundMusicType: value as BackgroundMusicType,
-              })
-            }
-          />
-        </div>
-
-        <div
-          className="bg-yellow-100 dark:bg-yellow-900/30 border-l-4 border-yellow-500 dark:border-yellow-600 text-yellow-800 dark:text-yellow-200 p-4 rounded-r-lg"
-          role="alert"
+    <div className="flex flex-col h-full w-full">
+      {/* Action Zone */}
+      <div className="flex-shrink-0 flex flex-col items-center justify-center pt-24 pb-8 px-4 text-center bg-gray-100 dark:bg-gray-900">
+        <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white">
+          Ready to Breathe?
+        </h1>
+        <button
+          onClick={onStart}
+          aria-label="Start session"
+          className="mt-6 w-48 h-48 sm:w-56 sm:h-56 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex flex-col items-center justify-center shadow-lg hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 ease-in-out focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800"
         >
-          <p className="font-bold">Important Safety Notice</p>
-          <p className="text-sm">
-            Never practice in or near water or while driving.
-            <button
-              onClick={onShowInfo}
-              className="underline font-semibold ml-1"
-            >
-              Learn more
-            </button>
-            .
-          </p>
-        </div>
+          <span className="text-4xl font-bold tracking-wider">START</span>
+          <span className="mt-2 text-sm opacity-80">
+            {settings.totalRounds} Rounds &bull; {settings.breathsPerRound}{" "}
+            Breaths
+          </span>
+        </button>
+      </div>
 
-        <div className="flex flex-col space-y-4">
-          <button
-            onClick={onStart}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-4 rounded-xl text-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 ease-in-out focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800"
-          >
-            Start Session
-          </button>
-          {hasHistory && (
-            <button
-              onClick={onShowHistory}
-              className="w-full bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-bold py-3 px-4 rounded-xl text-lg transition-colors"
-            >
-              Session History
-            </button>
-          )}
+      {/* Configuration Zone */}
+      <div className="flex-grow overflow-y-auto pb-8">
+        <div className="max-w-md mx-auto px-4 sm:px-6">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 sm:p-8 space-y-8">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">
+                Customize Your Session
+              </h2>
+            </div>
+
+            <div className="space-y-6">
+              <Slider
+                label="Breaths per Round"
+                value={settings.breathsPerRound}
+                min={20}
+                max={50}
+                step={5}
+                onChange={(e) =>
+                  onSettingsChange({ breathsPerRound: Number(e.target.value) })
+                }
+              />
+              <Slider
+                label="Number of Rounds"
+                value={settings.totalRounds}
+                min={1}
+                max={5}
+                step={1}
+                onChange={(e) =>
+                  onSettingsChange({ totalRounds: Number(e.target.value) })
+                }
+              />
+            </div>
+
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-6 space-y-6">
+              <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200">
+                Experience
+              </h3>
+              <Toggle
+                label="Spoken Guidance"
+                checked={settings.enableSpokenGuidance}
+                onChange={(e) =>
+                  onSettingsChange({ enableSpokenGuidance: e.target.checked })
+                }
+              />
+              <Toggle
+                label="Fast Paced Breaths"
+                checked={settings.fastPacedBreathing}
+                onChange={(e) =>
+                  onSettingsChange({ fastPacedBreathing: e.target.checked })
+                }
+              />
+              <OptionSelector
+                label="Calm Background"
+                options={musicOptions}
+                selectedValue={settings.backgroundMusicType}
+                onChange={(value) =>
+                  onSettingsChange({
+                    backgroundMusicType: value as BackgroundMusicType,
+                  })
+                }
+              />
+            </div>
+
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+              <div
+                className="bg-yellow-100 dark:bg-yellow-900/30 border-l-4 border-yellow-500 dark:border-yellow-600 text-yellow-800 dark:text-yellow-200 p-4 rounded-r-lg"
+                role="alert"
+              >
+                <p className="font-bold">Important Safety Notice</p>
+                <p className="text-sm">
+                  Never practice in or near water or while driving.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4 pt-4">
+              {hasHistory && (
+                <button
+                  onClick={onShowHistory}
+                  className="w-full bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-bold py-3 px-4 rounded-xl text-lg transition-colors"
+                >
+                  Session History
+                </button>
+              )}
+              <button
+                onClick={onShowInfo}
+                className="w-full bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-bold py-3 px-4 rounded-xl text-lg transition-colors"
+              >
+                About the Method
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
