@@ -13,7 +13,6 @@ A modern, calming, and configurable web application to guide users through the W
 - **Light & Dark Modes:** Automatically adapts to your system theme, with a manual override.
 - **Safety First:** Includes clear safety warnings and educational content about the practice.
 - **Persistent Settings:** Remembers your preferred session configuration between visits.
-- **No Build Tools Needed:** Runs directly in modern browsers using ES modules and import maps.
 
 ## 🛠️ Tech Stack
 
