@@ -120,6 +120,7 @@ export const PostSessionScreen: React.FC<PostSessionScreenProps> = ({
 
       <div className="flex-shrink-0 p-4 pb-6 w-full max-w-sm mx-auto space-y-3">
         <button
+          type="button"
           onClick={onDone}
           className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg py-4 rounded-xl shadow-lg transition-colors transform hover:scale-105"
         >
@@ -127,12 +128,14 @@ export const PostSessionScreen: React.FC<PostSessionScreenProps> = ({
         </button>
         <div className="flex space-x-3 text-center">
           <button
+            type="button"
             onClick={onRetry}
             className="w-full bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-semibold py-3 rounded-xl transition-colors"
           >
             Retry
           </button>
           <button
+            type="button"
             onClick={onShowHistory}
             className="w-full bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-semibold py-3 rounded-xl transition-colors"
           >

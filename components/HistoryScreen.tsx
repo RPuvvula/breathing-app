@@ -83,8 +83,9 @@ const SessionItem: React.FC<{
           </p>
         </div>
         <button
+          type="button"
           onClick={() => setIsExpanded(!isExpanded)}
-          aria-expanded={isExpanded}
+          aria-expanded={`${isExpanded}`}
           aria-controls={`session-details-${session.id}`}
           className="flex items-center justify-center mt-3 sm:mt-0 sm:ml-4 px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-700/80 hover:bg-gray-200 dark:hover:bg-gray-600/80 transition-colors text-sm font-semibold text-gray-700 dark:text-gray-300"
         >
@@ -202,6 +203,7 @@ const FilterTabs: React.FC<{
       <div className="p-1 bg-gray-200 dark:bg-gray-800 rounded-lg flex space-x-1">
         {tabs.map((tab, index) => (
           <button
+            type="button"
             key={tab.key}
             id={`filter-tab-${index}`}
             role="tab"
@@ -303,6 +305,7 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({
             Session History
           </h2>
           <button
+            type="button"
             onClick={onClose}
             aria-label="Close history"
             className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
