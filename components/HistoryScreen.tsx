@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { SessionRecord } from "../types";
 import { CloseIcon, ChevronDownIcon } from "./Icons";
 
@@ -13,8 +13,27 @@ const formatTime = (seconds: number) => {
   return `${mins}:${secs}`;
 };
 
-const SessionItem: React.FC<{ session: SessionRecord }> = ({ session }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+/**
+ * Gets the start of the week for a given date.
+ * @param date The date to find the start of the week for.
+ * @param startDay The day the week starts on (0 for Sunday, 1 for Monday). Defaults to 1.
+ * @returns A new Date object set to the start of the week at 00:00:00.
+ */
+const getStartOfWeek = (date: Date, startDay: number = 1): Date => {
+  const d = new Date(date);
+  const day = d.getDay();
+  // Adjust day to be 0 for Monday, 1 for Tuesday, etc. if week starts on Monday
+  const relativeDay = (day - startDay + 7) % 7;
+  d.setDate(d.getDate() - relativeDay);
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
+const SessionItem: React.FC<{
+  session: SessionRecord;
+  isInitiallyExpanded?: boolean;
+}> = ({ session, isInitiallyExpanded = false }) => {
+  const [isExpanded, setIsExpanded] = useState(isInitiallyExpanded);
 
   const bestHold =
     session.retentionTimes.length > 0 ? Math.max(...session.retentionTimes) : 0;
@@ -130,10 +149,123 @@ const SessionItem: React.FC<{ session: SessionRecord }> = ({ session }) => {
   );
 };
 
+type FilterType = "week" | "month" | "all";
+
+// Helper to group sessions by time periods
+const groupSessions = (
+  sessions: SessionRecord[]
+): { [key: string]: SessionRecord[] } => {
+  const groups: { [key: string]: SessionRecord[] } = {};
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  const startOfThisWeek = getStartOfWeek(today); // Week starts on Monday
+  const startOfLastWeek = new Date(startOfThisWeek);
+  startOfLastWeek.setDate(startOfThisWeek.getDate() - 7);
+
+  sessions.forEach((session) => {
+    const sessionDate = new Date(session.date);
+    let groupName: string;
+
+    if (sessionDate >= startOfThisWeek) {
+      groupName = "This Week";
+    } else if (sessionDate >= startOfLastWeek) {
+      groupName = "Last Week";
+    } else {
+      groupName = sessionDate.toLocaleString("default", {
+        month: "long",
+        year: "numeric",
+      });
+    }
+
+    if (!groups[groupName]) {
+      groups[groupName] = [];
+    }
+    groups[groupName].push(session);
+  });
+
+  return groups;
+};
+
+const FilterTabs: React.FC<{
+  activeFilter: FilterType;
+  onFilterChange: (filter: FilterType) => void;
+}> = ({ activeFilter, onFilterChange }) => {
+  const tabs: { key: FilterType; label: string }[] = [
+    { key: "week", label: "This Week" },
+    { key: "month", label: "This Month" },
+    { key: "all", label: "All" },
+  ];
+
+  return (
+    <div className="mb-6" role="tablist" aria-label="Session History Filters">
+      <div className="p-1 bg-gray-200 dark:bg-gray-800 rounded-lg flex space-x-1">
+        {tabs.map((tab, index) => (
+          <button
+            key={tab.key}
+            id={`filter-tab-${index}`}
+            role="tab"
+            aria-selected={activeFilter === tab.key}
+            aria-controls="session-history-panel"
+            onClick={() => onFilterChange(tab.key)}
+            className={`w-full py-2 text-sm font-semibold rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 ${
+              activeFilter === tab.key
+                ? "bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 shadow"
+                : "text-gray-600 dark:text-gray-400 hover:bg-gray-300/50 dark:hover:bg-gray-700/50"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export const HistoryScreen: React.FC<HistoryScreenProps> = ({
   sessions,
   onClose,
 }) => {
+  const [activeFilter, setActiveFilter] = useState<FilterType>("week");
+
+  const filteredSessions = useMemo(() => {
+    const now = new Date();
+    switch (activeFilter) {
+      case "week": {
+        const startOfWeek = getStartOfWeek(now); // Uses Monday start
+        return sessions.filter((s) => new Date(s.date) >= startOfWeek);
+      }
+      case "month": {
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        startOfMonth.setHours(0, 0, 0, 0);
+        return sessions.filter((s) => new Date(s.date) >= startOfMonth);
+      }
+      case "all":
+      default:
+        return sessions;
+    }
+  }, [sessions, activeFilter]);
+
+  const groupedSessions = useMemo(
+    () => groupSessions(filteredSessions),
+    [filteredSessions]
+  );
+  const groupOrder = useMemo(() => {
+    return Object.keys(groupedSessions).sort((a, b) => {
+      if (a === "This Week") return -1;
+      if (b === "This Week") return 1;
+      if (a === "Last Week") return -1;
+      if (b === "Last Week") return 1;
+      return new Date(b).getTime() - new Date(a).getTime();
+    });
+  }, [groupedSessions]);
+
+  const emptyStateMessages = {
+    week: "You haven't completed any sessions this week.",
+    month: "You haven't completed any sessions this month.",
+    all: "You haven't completed any sessions yet.",
+  };
+
   return (
     <div className="fixed inset-0 bg-gray-100 dark:bg-gray-900 z-50 p-4 sm:p-6 overflow-y-auto">
       <div className="max-w-3xl mx-auto">
@@ -150,22 +282,58 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({
           </button>
         </div>
 
-        {sessions.length === 0 ? (
-          <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-            <p className="text-gray-600 dark:text-gray-400">
-              You haven't completed any sessions yet.
-            </p>
-            <p className="text-gray-600 dark:text-gray-400">
-              Your history will appear here once you do.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {sessions.map((session) => (
-              <SessionItem key={session.id} session={session} />
-            ))}
-          </div>
-        )}
+        <FilterTabs
+          activeFilter={activeFilter}
+          onFilterChange={setActiveFilter}
+        />
+
+        <div
+          id="session-history-panel"
+          role="tabpanel"
+          aria-labelledby={`filter-tab-${
+            activeFilter === "week" ? 0 : activeFilter === "month" ? 1 : 2
+          }`}
+        >
+          {filteredSessions.length === 0 ? (
+            <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+              <p className="text-lg text-gray-600 dark:text-gray-400">
+                {emptyStateMessages[activeFilter]}
+              </p>
+              <p className="mt-2 text-gray-500 dark:text-gray-500">
+                {activeFilter === "all"
+                  ? "Start a session and your history will appear here."
+                  : "Try another filter to see older sessions."}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {groupOrder.map((groupName, groupIndex) => (
+                <section
+                  key={groupName}
+                  aria-labelledby={`heading-${groupName.replace(/\s/g, "")}`}
+                >
+                  <h3
+                    id={`heading-${groupName.replace(/\s/g, "")}`}
+                    className="text-lg font-bold text-gray-800 dark:text-gray-200 px-1 mb-3"
+                  >
+                    {groupName}
+                  </h3>
+                  <div className="space-y-4">
+                    {groupedSessions[groupName].map((session, sessionIndex) => (
+                      <SessionItem
+                        key={session.id}
+                        session={session}
+                        isInitiallyExpanded={
+                          groupIndex === 0 && sessionIndex === 0
+                        }
+                      />
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
