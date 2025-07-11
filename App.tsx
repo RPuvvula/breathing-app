@@ -10,7 +10,8 @@ import { SettingsScreen } from "./components/SettingsScreen";
 import { SessionScreen } from "./components/SessionScreen";
 import { InfoScreen } from "./components/InfoScreen";
 import { HistoryScreen } from "./components/HistoryScreen";
-import { SunIcon, MoonIcon, InfoIcon, CloseIcon } from "./components/Icons";
+import { PostSessionScreen } from "./components/PostSessionScreen";
+import { SunIcon, MoonIcon } from "./components/Icons";
 
 const SETTINGS_STORAGE_KEY = "wimhof-settings";
 const SESSION_STORAGE_KEY = "wimhof-sessions";
@@ -28,6 +29,7 @@ function App() {
     () => (localStorage.getItem("theme") as Theme) || Theme.Light
   );
   const [screen, setScreen] = useState<Screen>(Screen.Settings);
+  const [lastSession, setLastSession] = useState<SessionRecord | null>(null);
 
   const [settings, setSettings] = useState<AppSettings>(() => {
     try {
@@ -86,16 +88,18 @@ function App() {
   };
 
   const handleFinishSession = useCallback(
-    (retentionTimes: number[]) => {
+    (retentionTimes: number[], durationInSeconds: number) => {
       if (retentionTimes.length > 0) {
         const newSession: SessionRecord = {
           id: new Date().toISOString(),
           date: new Date().toISOString(),
           rounds: retentionTimes.length,
           retentionTimes,
+          durationInSeconds,
         };
         const updatedHistory = [newSession, ...sessionHistory];
         setSessionHistory(updatedHistory);
+        setLastSession(newSession);
         try {
           localStorage.setItem(
             SESSION_STORAGE_KEY,
@@ -105,7 +109,7 @@ function App() {
           console.error("Failed to save session to local storage", error);
         }
       }
-      setScreen(Screen.Settings);
+      setScreen(Screen.PostSession);
     },
     [sessionHistory]
   );
@@ -136,6 +140,29 @@ function App() {
           <HistoryScreen
             sessions={sessionHistory}
             onClose={() => navigate(Screen.Settings)}
+          />
+        );
+      case Screen.PostSession:
+        if (!lastSession) {
+          // Fallback if somehow we get here without a session
+          return (
+            <SettingsScreen
+              settings={settings}
+              onSettingsChange={handleSettingsChange}
+              onStart={() => navigate(Screen.Session)}
+              onShowInfo={() => navigate(Screen.Info)}
+              onShowHistory={() => navigate(Screen.History)}
+              hasHistory={sessionHistory.length > 0}
+            />
+          );
+        }
+        return (
+          <PostSessionScreen
+            session={lastSession}
+            history={sessionHistory}
+            onDone={() => navigate(Screen.Settings)}
+            onRetry={() => navigate(Screen.Session)}
+            onShowHistory={() => navigate(Screen.History)}
           />
         );
       case Screen.Settings:
