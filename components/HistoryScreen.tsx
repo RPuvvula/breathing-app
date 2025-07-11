@@ -222,6 +222,41 @@ const FilterTabs: React.FC<{
   );
 };
 
+const SummaryCard: React.FC<{ sessions: SessionRecord[] }> = ({ sessions }) => {
+  if (sessions.length === 0) return null;
+
+  const allHolds = sessions.flatMap((s) => s.retentionTimes);
+  const sessionCount = sessions.length;
+  const longestHold = allHolds.length > 0 ? Math.max(...allHolds) : 0;
+  const totalHoldTime = allHolds.reduce((sum, time) => sum + time, 0);
+  const avgHold =
+    allHolds.length > 0 ? Math.round(totalHoldTime / allHolds.length) : 0;
+
+  return (
+    <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md mb-6 text-center text-sm sm:text-base text-gray-700 dark:text-gray-300">
+      <span className="mr-2" aria-hidden="true">
+        🧘‍♂️
+      </span>
+      <span className="font-bold">{sessionCount}</span>{" "}
+      {sessionCount === 1 ? "session" : "sessions"}
+      <span
+        className="text-gray-300 dark:text-gray-600 mx-2 sm:mx-3"
+        aria-hidden="true"
+      >
+        ·
+      </span>
+      Avg Hold: <span className="font-bold">{formatTime(avgHold)}</span>
+      <span
+        className="text-gray-300 dark:text-gray-600 mx-2 sm:mx-3"
+        aria-hidden="true"
+      >
+        ·
+      </span>
+      Longest: <span className="font-bold">{formatTime(longestHold)}</span>
+    </div>
+  );
+};
+
 export const HistoryScreen: React.FC<HistoryScreenProps> = ({
   sessions,
   onClose,
@@ -288,6 +323,7 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({
             activeFilter === "week" ? 0 : activeFilter === "month" ? 1 : 2
           }`}
         >
+          <SummaryCard sessions={filteredSessions} />
           {filteredSessions.length === 0 ? (
             <>
               {sessions.length === 0 ? (
