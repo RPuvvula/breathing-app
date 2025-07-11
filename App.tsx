@@ -1,87 +1,43 @@
 import { useState, useEffect, useCallback } from "react";
-import {
-  Theme,
-  Screen,
-  SessionRecord,
-  AppSettings,
-  BackgroundMusicType,
-} from "./types";
+import { Theme, Screen, SessionRecord, AppSettings } from "./types";
 import { SettingsScreen } from "./components/SettingsScreen";
 import { SessionScreen } from "./components/SessionScreen";
 import { InfoScreen } from "./components/InfoScreen";
 import { HistoryScreen } from "./components/HistoryScreen";
 import { PostSessionScreen } from "./components/PostSessionScreen";
 import { SunIcon, MoonIcon } from "./components/Icons";
-
-const SETTINGS_STORAGE_KEY = "wimhof-settings";
-const SESSION_STORAGE_KEY = "wimhof-sessions";
-
-const defaultSettings: AppSettings = {
-  breathsPerRound: 30,
-  totalRounds: 3,
-  enableSpokenGuidance: true,
-  backgroundMusicType: BackgroundMusicType.Off,
-  fastPacedBreathing: false,
-};
+import {
+  getTheme,
+  setTheme as saveTheme,
+  getSettings,
+  saveSettings,
+  getSessionHistory,
+  saveSessionHistory,
+} from "./lib/storage";
 
 function App() {
-  const [theme, setTheme] = useState<Theme>(
-    () => (localStorage.getItem("theme") as Theme) || Theme.Light
-  );
+  const [theme, setTheme] = useState<Theme>(() => getTheme() || Theme.Light);
   const [screen, setScreen] = useState<Screen>(Screen.Settings);
   const [lastSession, setLastSession] = useState<SessionRecord | null>(null);
 
-  const [settings, setSettings] = useState<AppSettings>(() => {
-    try {
-      const storedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
-      if (storedSettings) {
-        const parsed = JSON.parse(storedSettings);
-        // Migration from old setting
-        if (parsed.hasOwnProperty("enableBackgroundMusic")) {
-          parsed.backgroundMusicType = parsed.enableBackgroundMusic
-            ? BackgroundMusicType.AmbientHum
-            : BackgroundMusicType.Off;
-          delete parsed.enableBackgroundMusic;
-        }
-        return { ...defaultSettings, ...parsed };
-      }
-    } catch (error) {
-      console.error("Failed to load settings from local storage", error);
-    }
-    return defaultSettings;
-  });
+  const [settings, setSettings] = useState<AppSettings>(getSettings);
 
-  const [sessionHistory, setSessionHistory] = useState<SessionRecord[]>([]);
+  const [sessionHistory, setSessionHistory] =
+    useState<SessionRecord[]>(getSessionHistory);
 
   useEffect(() => {
     const root = window.document.documentElement;
     if (theme === Theme.Dark) {
       root.classList.add("dark");
-      localStorage.setItem("theme", "dark");
     } else {
       root.classList.remove("dark");
-      localStorage.setItem("theme", "light");
     }
+    saveTheme(theme);
   }, [theme]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
-    } catch (error) {
-      console.error("Failed to save settings to local storage", error);
-    }
+    saveSettings(settings);
   }, [settings]);
-
-  useEffect(() => {
-    try {
-      const storedSessions = localStorage.getItem(SESSION_STORAGE_KEY);
-      if (storedSessions) {
-        setSessionHistory(JSON.parse(storedSessions));
-      }
-    } catch (error) {
-      console.error("Failed to load session history from local storage", error);
-    }
-  }, []);
 
   const toggleTheme = () => {
     setTheme(theme === Theme.Light ? Theme.Dark : Theme.Light);
@@ -100,14 +56,7 @@ function App() {
         const updatedHistory = [newSession, ...sessionHistory];
         setSessionHistory(updatedHistory);
         setLastSession(newSession);
-        try {
-          localStorage.setItem(
-            SESSION_STORAGE_KEY,
-            JSON.stringify(updatedHistory)
-          );
-        } catch (error) {
-          console.error("Failed to save session to local storage", error);
-        }
+        saveSessionHistory(updatedHistory);
       }
       setScreen(Screen.PostSession);
     },
