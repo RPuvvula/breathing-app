@@ -187,6 +187,7 @@ function App() {
       {showHeader && (
         <header className="absolute top-0 left-0 right-0 p-4 flex justify-end items-center z-10">
           <button
+            type="button"
             onClick={toggleTheme}
             aria-label="Toggle theme"
             className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"

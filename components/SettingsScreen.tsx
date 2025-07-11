@@ -68,6 +68,7 @@ const OptionSelector: React.FC<{
     <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2 rounded-lg bg-gray-200 dark:bg-gray-700 p-1">
       {options.map(({ value, label: optionLabel }) => (
         <button
+          type="button"
           key={value}
           onClick={() => onChange(value)}
           className={`px-2 py-2 text-sm font-semibold rounded-md transition-colors focus:outline-none ${
@@ -108,6 +109,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           Ready to Breathe?
         </h1>
         <button
+          type="button"
           onClick={onStart}
           aria-label="Start session"
           className="mt-6 w-48 h-48 sm:w-56 sm:h-56 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex flex-col items-center justify-center shadow-lg hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 ease-in-out focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800"
@@ -197,6 +199,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           <div className="flex flex-col sm:flex-row gap-4 pt-4">
             {hasHistory && (
               <button
+                type="button"
                 onClick={onShowHistory}
                 className="w-full bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-bold py-3 px-4 rounded-xl text-lg transition-colors"
               >
@@ -204,6 +207,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               </button>
             )}
             <button
+              type="button"
               onClick={onShowInfo}
               className="w-full bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-bold py-3 px-4 rounded-xl text-lg transition-colors"
             >

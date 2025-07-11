@@ -207,6 +207,7 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
           {totalRounds}
         </span>
         <button
+          type="button"
           onClick={handleEndEarly}
           className="bg-red-500/50 hover:bg-red-500 text-white font-bold py-2 px-4 rounded-full transition-colors"
         >
@@ -242,6 +243,7 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
           <div className="h-20 flex items-center justify-center mt-2">
             {phase === Phase.Retention && (
               <button
+                type="button"
                 onClick={handleRetentionEnd}
                 className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-12 rounded-full text-xl shadow-lg transform hover:scale-105 transition-transform"
               >
