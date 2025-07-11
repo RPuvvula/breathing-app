@@ -260,12 +260,6 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({
     });
   }, [groupedSessions]);
 
-  const emptyStateMessages = {
-    week: "You haven't completed any sessions this week.",
-    month: "You haven't completed any sessions this month.",
-    all: "You haven't completed any sessions yet.",
-  };
-
   return (
     <div className="fixed inset-0 bg-gray-100 dark:bg-gray-900 z-50 p-4 sm:p-6 overflow-y-auto">
       <div className="max-w-3xl mx-auto">
@@ -295,16 +289,36 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({
           }`}
         >
           {filteredSessions.length === 0 ? (
-            <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-              <p className="text-lg text-gray-600 dark:text-gray-400">
-                {emptyStateMessages[activeFilter]}
-              </p>
-              <p className="mt-2 text-gray-500 dark:text-gray-500">
-                {activeFilter === "all"
-                  ? "Start a session and your history will appear here."
-                  : "Try another filter to see older sessions."}
-              </p>
-            </div>
+            <>
+              {sessions.length === 0 ? (
+                <div className="text-center py-12 px-4 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+                  <p className="text-5xl mb-4" aria-hidden="true">
+                    🧘
+                  </p>
+                  <p className="text-lg font-semibold text-gray-700 dark:text-gray-300">
+                    Your journey begins!
+                  </p>
+                  <p className="mt-2 text-gray-500 dark:text-gray-400">
+                    Complete your first session and your history will appear
+                    here.
+                  </p>
+                </div>
+              ) : (
+                <div className="text-center py-12 px-4 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+                  <p className="text-5xl mb-4" aria-hidden="true">
+                    🧐
+                  </p>
+                  <p className="text-lg font-semibold text-gray-700 dark:text-gray-300">
+                    {`No sessions recorded ${
+                      activeFilter === "week" ? "this week" : "this month"
+                    }.`}
+                  </p>
+                  <p className="mt-2 text-gray-500 dark:text-gray-400">
+                    Try the "All" filter to see your full history.
+                  </p>
+                </div>
+              )}
+            </>
           ) : (
             <div className="space-y-6">
               {groupOrder.map((groupName, groupIndex) => (
