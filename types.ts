@@ -8,6 +8,7 @@ export enum Screen {
   Session,
   Info,
   History,
+  PostSession,
 }
 
 export enum Phase {
@@ -24,6 +25,7 @@ export interface SessionRecord {
   date: string;
   rounds: number;
   retentionTimes: number[];
+  durationInSeconds: number;
 }
 
 export enum BackgroundMusicType {

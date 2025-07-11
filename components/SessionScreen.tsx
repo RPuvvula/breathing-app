@@ -8,7 +8,7 @@ interface SessionScreenProps {
   enableSpokenGuidance: boolean;
   backgroundMusicType: BackgroundMusicType;
   fastPacedBreathing: boolean;
-  onFinish: (retentionTimes: number[]) => void;
+  onFinish: (retentionTimes: number[], durationInSeconds: number) => void;
 }
 
 const formatTime = (seconds: number) => {
@@ -34,6 +34,7 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
   const [breathCount, setBreathCount] = useState(0);
   const [timer, setTimer] = useState(0);
   const [retentionTimes, setRetentionTimes] = useState<number[]>([]);
+  const [sessionStartTime] = useState(Date.now());
   const { playSound, speak, startBackgroundMusic, stopBackgroundMusic } =
     useAudio();
 
@@ -82,8 +83,11 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
   const handleFinishSession = useCallback(() => {
     setPhase(Phase.Finished);
     speakIfEnabled("Session complete. Well done.");
-    setTimeout(() => onFinish(retentionTimes), 2000);
-  }, [onFinish, retentionTimes, speakIfEnabled]);
+    const durationInSeconds = Math.round(
+      (Date.now() - sessionStartTime) / 1000
+    );
+    setTimeout(() => onFinish(retentionTimes, durationInSeconds), 2000);
+  }, [onFinish, retentionTimes, speakIfEnabled, sessionStartTime]);
 
   useEffect(() => {
     let interval: ReturnType<typeof setTimeout> | null = null;
@@ -165,6 +169,13 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
     playSound("chime");
   };
 
+  const handleEndEarly = () => {
+    onFinish(
+      retentionTimes,
+      Math.round((Date.now() - sessionStartTime) / 1000)
+    );
+  };
+
   const getCircleAnimation = () => {
     switch (phase) {
       case Phase.Breathing:
@@ -196,7 +207,7 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
           {totalRounds}
         </span>
         <button
-          onClick={() => onFinish(retentionTimes)}
+          onClick={handleEndEarly}
           className="bg-red-500/50 hover:bg-red-500 text-white font-bold py-2 px-4 rounded-full transition-colors"
         >
           End
