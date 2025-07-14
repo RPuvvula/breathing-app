@@ -6,7 +6,7 @@ interface PostSessionScreenProps {
   session: SessionRecord;
   history: SessionRecord[];
   onDone: () => void;
-  onRetry: () => void;
+  onGoAgain: () => void;
   onShowHistory: () => void;
 }
 
@@ -73,7 +73,7 @@ export const PostSessionScreen: React.FC<PostSessionScreenProps> = ({
   session,
   history,
   onDone,
-  onRetry,
+  onGoAgain,
   onShowHistory,
 }) => {
   const streak = calculateStreak(history);
@@ -129,17 +129,17 @@ export const PostSessionScreen: React.FC<PostSessionScreenProps> = ({
         <div className="flex space-x-3 text-center">
           <button
             type="button"
-            onClick={onRetry}
+            onClick={onGoAgain}
             className="w-full bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-semibold py-3 rounded-xl transition-colors"
           >
-            Retry
+            Go Again
           </button>
           <button
             type="button"
             onClick={onShowHistory}
             className="w-full bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-semibold py-3 rounded-xl transition-colors"
           >
-            History
+            View History
           </button>
         </div>
       </div>

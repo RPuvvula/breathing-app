@@ -8,6 +8,7 @@ interface SessionScreenProps {
   enableSpokenGuidance: boolean;
   backgroundMusicType: BackgroundMusicType;
   fastPacedBreathing: boolean;
+  skipInitialPreparation?: boolean;
   onFinish: (retentionTimes: number[], durationInSeconds: number) => void;
 }
 
@@ -27,9 +28,12 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
   enableSpokenGuidance,
   backgroundMusicType,
   fastPacedBreathing,
+  skipInitialPreparation = false,
   onFinish,
 }) => {
-  const [phase, setPhase] = useState<Phase>(Phase.InitialPreparation);
+  const [phase, setPhase] = useState<Phase>(
+    skipInitialPreparation ? Phase.Preparing : Phase.InitialPreparation
+  );
   const [currentRound, setCurrentRound] = useState(1);
   const [breathCount, setBreathCount] = useState(0);
   const [timer, setTimer] = useState(0);
@@ -100,7 +104,7 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
         "Get ready to begin. Find a comfortable position and relax."
       );
       interval = setTimeout(() => {
-        setPhase(Phase.Breathing);
+        setPhase(Phase.Preparing);
       }, 8000);
     } else if (phase === Phase.Preparing) {
       speakIfEnabled(`Get ready for Round ${currentRound}.`);

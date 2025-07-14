@@ -25,6 +25,9 @@ function App() {
   const [sessionHistory, setSessionHistory] =
     useState<SessionRecord[]>(getSessionHistory);
 
+  const [sessionKey, setSessionKey] = useState(Date.now());
+  const [skipPreparation, setSkipPreparation] = useState(false);
+
   useEffect(() => {
     const root = window.document.documentElement;
     if (theme === Theme.Dark) {
@@ -41,6 +44,12 @@ function App() {
 
   const toggleTheme = () => {
     setTheme(theme === Theme.Light ? Theme.Dark : Theme.Light);
+  };
+
+  const handleStartSession = (skip: boolean) => {
+    setSkipPreparation(skip);
+    setSessionKey(Date.now()); // New key forces remount of SessionScreen
+    setScreen(Screen.Session);
   };
 
   const handleFinishSession = useCallback(
@@ -74,11 +83,13 @@ function App() {
       case Screen.Session:
         return (
           <SessionScreen
+            key={sessionKey}
             breathsPerRound={settings.breathsPerRound}
             totalRounds={settings.totalRounds}
             enableSpokenGuidance={settings.enableSpokenGuidance}
             backgroundMusicType={settings.backgroundMusicType}
             fastPacedBreathing={settings.fastPacedBreathing}
+            skipInitialPreparation={skipPreparation}
             onFinish={handleFinishSession}
           />
         );
@@ -98,7 +109,7 @@ function App() {
             <SettingsScreen
               settings={settings}
               onSettingsChange={handleSettingsChange}
-              onStart={() => navigate(Screen.Session)}
+              onStart={() => handleStartSession(false)}
               onShowInfo={() => navigate(Screen.Info)}
               onShowHistory={() => navigate(Screen.History)}
               hasHistory={sessionHistory.length > 0}
@@ -110,7 +121,7 @@ function App() {
             session={lastSession}
             history={sessionHistory}
             onDone={() => navigate(Screen.Settings)}
-            onRetry={() => navigate(Screen.Session)}
+            onGoAgain={() => handleStartSession(true)}
             onShowHistory={() => navigate(Screen.History)}
           />
         );
@@ -120,7 +131,7 @@ function App() {
           <SettingsScreen
             settings={settings}
             onSettingsChange={handleSettingsChange}
-            onStart={() => navigate(Screen.Session)}
+            onStart={() => handleStartSession(false)}
             onShowInfo={() => navigate(Screen.Info)}
             onShowHistory={() => navigate(Screen.History)}
             hasHistory={sessionHistory.length > 0}
