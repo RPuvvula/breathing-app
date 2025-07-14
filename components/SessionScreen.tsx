@@ -29,7 +29,7 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
   fastPacedBreathing,
   onFinish,
 }) => {
-  const [phase, setPhase] = useState<Phase>(Phase.Preparing);
+  const [phase, setPhase] = useState<Phase>(Phase.InitialPreparation);
   const [currentRound, setCurrentRound] = useState(1);
   const [breathCount, setBreathCount] = useState(0);
   const [timer, setTimer] = useState(0);
@@ -39,9 +39,11 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
     useAudio();
 
   const instructionText = {
+    [Phase.InitialPreparation]: "Get Ready...",
     [Phase.Preparing]: `Get ready for Round ${currentRound}`,
     [Phase.Breathing]: "Breathe deeply... In... Out...",
-    [Phase.Retention]: "Hold your breath...",
+    [Phase.Retention]:
+      "Hold your breath. Tap the button below when you need to breathe.",
     [Phase.Recovery]: "Quickly inhale and hold",
     [Phase.Transition]: "Release breath hold... let it go.",
     [Phase.Finished]: "Session Complete!",
@@ -93,7 +95,14 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
     let interval: ReturnType<typeof setTimeout> | null = null;
     const breathDuration = fastPacedBreathing ? 1600 : 2000;
 
-    if (phase === Phase.Preparing) {
+    if (phase === Phase.InitialPreparation) {
+      speakIfEnabled(
+        "Get ready to begin. Find a comfortable position and relax."
+      );
+      interval = setTimeout(() => {
+        setPhase(Phase.Breathing);
+      }, 8000);
+    } else if (phase === Phase.Preparing) {
       speakIfEnabled(`Get ready for Round ${currentRound}.`);
       interval = setTimeout(() => {
         setPhase(Phase.Breathing);
@@ -114,7 +123,9 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
     } else if (phase === Phase.Retention) {
       if (timer === 0) {
         // only speak on first render of this phase
-        speakIfEnabled("Exhale, and hold.");
+        speakIfEnabled(
+          "Final exhalation... and hold. When you feel the urge to breathe, tap the button to continue."
+        );
         playSound("hold");
       }
       interval = setInterval(() => setTimer((t) => t + 1), 1000);
@@ -178,6 +189,8 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
 
   const getCircleAnimation = () => {
     switch (phase) {
+      case Phase.InitialPreparation:
+        return "animate-slow-pulse";
       case Phase.Breathing:
         return breathCount % 2 === 0 ? "animate-inhale" : "animate-exhale";
       case Phase.Recovery:
@@ -198,6 +211,11 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
         .animate-exhale { animation: exhale ${breathAnimationDuration}s ease-in-out forwards; }
         @keyframes inhale { from { transform: scale(1); } to { transform: scale(1.15); } }
         @keyframes exhale { from { transform: scale(1.15); } to { transform: scale(1); } }
+        @keyframes slow-pulse { 
+          0%, 100% { transform: scale(1); opacity: 0.8; } 
+          50% { transform: scale(1.05); opacity: 1; } 
+        }
+        .animate-slow-pulse { animation: slow-pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
       `}</style>
 
       {/* Header */}
@@ -217,41 +235,70 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
 
       {/* Main Content Wrapper - this grows to fill space and centers its content */}
       <div className="flex-grow flex flex-col items-center justify-center w-full">
-        <div className="flex flex-col items-center justify-center">
-          <div
-            className={`relative w-64 h-64 sm:w-80 sm:h-80 rounded-full bg-white/10 flex items-center justify-center transition-transform duration-1000 ease-in-out ${getCircleAnimation()}`}
-          >
-            <div className="absolute w-full h-full rounded-full border-2 border-white/20"></div>
-            <div className="text-center">
-              {phase === Phase.Breathing && (
-                <span className="text-7xl font-bold">
-                  {Math.ceil((breathCount + 1) / 2)}
-                </span>
-              )}
-              {(phase === Phase.Retention || phase === Phase.Finished) && (
-                <span className="text-7xl font-mono">{formatTime(timer)}</span>
-              )}
-              {phase === Phase.Recovery && (
-                <span className="text-7xl font-mono">{timer}</span>
+        {phase === Phase.InitialPreparation ? (
+          <div className="flex flex-col items-center justify-center text-center max-w-lg px-4">
+            <div
+              className={`relative w-48 h-48 sm:w-56 sm:h-56 rounded-full bg-white/10 flex items-center justify-center transition-transform duration-1000 ease-in-out ${getCircleAnimation()}`}
+            >
+              <div className="absolute w-full h-full rounded-full border-2 border-white/20"></div>
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-bold mt-8">
+              Prepare for Your Session
+            </h2>
+            <p className="text-xl mt-2 opacity-80">
+              {totalRounds} Rounds &bull; {breathsPerRound} Breaths
+            </p>
+            <p className="text-lg mt-6 opacity-80">
+              The first round will begin shortly.
+            </p>
+            <div className="mt-8 p-4 bg-black/20 rounded-lg text-base max-w-md">
+              <p className="font-bold text-blue-300">Quick Tip</p>
+              <p className="mt-1 opacity-90">
+                During the breath-hold, listen to your body and tap the{" "}
+                <span className="font-semibold">END HOLD</span> button when
+                you're ready to continue.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center">
+            <div
+              className={`relative w-64 h-64 sm:w-80 sm:h-80 rounded-full bg-white/10 flex items-center justify-center transition-transform duration-1000 ease-in-out ${getCircleAnimation()}`}
+            >
+              <div className="absolute w-full h-full rounded-full border-2 border-white/20"></div>
+              <div className="text-center">
+                {phase === Phase.Breathing && (
+                  <span className="text-7xl font-bold">
+                    {Math.ceil((breathCount + 1) / 2)}
+                  </span>
+                )}
+                {(phase === Phase.Retention || phase === Phase.Finished) && (
+                  <span className="text-7xl font-mono">
+                    {formatTime(timer)}
+                  </span>
+                )}
+                {phase === Phase.Recovery && (
+                  <span className="text-7xl font-mono">{timer}</span>
+                )}
+              </div>
+            </div>
+            <p className="text-2xl font-light h-16 mt-4 flex items-center justify-center">
+              {instructionText[phase]}
+            </p>
+
+            <div className="h-20 flex items-center justify-center mt-2">
+              {phase === Phase.Retention && (
+                <button
+                  type="button"
+                  onClick={handleRetentionEnd}
+                  className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-12 rounded-full text-xl shadow-lg transform hover:scale-105 transition-transform animate-pulse"
+                >
+                  END HOLD
+                </button>
               )}
             </div>
           </div>
-          <p className="text-2xl font-light h-16 mt-4 flex items-center justify-center">
-            {instructionText[phase]}
-          </p>
-
-          <div className="h-20 flex items-center justify-center mt-2">
-            {phase === Phase.Retention && (
-              <button
-                type="button"
-                onClick={handleRetentionEnd}
-                className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-12 rounded-full text-xl shadow-lg transform hover:scale-105 transition-transform"
-              >
-                END HOLD
-              </button>
-            )}
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

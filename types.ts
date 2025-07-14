@@ -12,6 +12,7 @@ export enum Screen {
 }
 
 export enum Phase {
+  InitialPreparation,
   Preparing,
   Breathing,
   Retention,
