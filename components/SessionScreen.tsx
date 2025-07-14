@@ -39,8 +39,14 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
   const [timer, setTimer] = useState(0);
   const [retentionTimes, setRetentionTimes] = useState<number[]>([]);
   const [sessionStartTime] = useState(Date.now());
-  const { playSound, speak, startBackgroundMusic, stopBackgroundMusic } =
-    useAudio();
+  const {
+    playSound,
+    speak,
+    startBackgroundMusic,
+    stopBackgroundMusic,
+    isSpeechReady,
+  } = useAudio();
+  const [initialPromptSpoken, setInitialPromptSpoken] = useState(false);
 
   const instructionText = {
     [Phase.InitialPreparation]: "Get Ready...",
@@ -95,14 +101,28 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
     setTimeout(() => onFinish(retentionTimes, durationInSeconds), 2000);
   }, [onFinish, retentionTimes, speakIfEnabled, sessionStartTime]);
 
+  // This effect's purpose is to fire the initial prompt as soon as the
+  // speech engine is ready, solving the race condition in Firefox.
+  useEffect(() => {
+    if (
+      phase === Phase.InitialPreparation &&
+      isSpeechReady &&
+      !initialPromptSpoken
+    ) {
+      speakIfEnabled(
+        "Get ready to begin. Find a comfortable position and relax."
+      );
+      setInitialPromptSpoken(true);
+    }
+  }, [phase, isSpeechReady, initialPromptSpoken, speakIfEnabled]);
+
   useEffect(() => {
     let interval: ReturnType<typeof setTimeout> | null = null;
     const breathDuration = fastPacedBreathing ? 1600 : 2000;
 
     if (phase === Phase.InitialPreparation) {
-      speakIfEnabled(
-        "Get ready to begin. Find a comfortable position and relax."
-      );
+      // Voice prompt is now handled by a separate, dedicated effect that
+      // waits for the speech engine to be ready.
       interval = setTimeout(() => {
         setPhase(Phase.Preparing);
       }, 8000);

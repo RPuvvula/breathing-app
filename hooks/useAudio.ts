@@ -1,4 +1,4 @@
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useState, useEffect } from "react";
 import { BackgroundMusicType } from "../types";
 
 const isBrowser = typeof window !== "undefined";
@@ -12,6 +12,30 @@ interface MusicNodes {
 export const useAudio = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const backgroundMusicNodesRef = useRef<MusicNodes | null>(null);
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [isSpeechReady, setIsSpeechReady] = useState(false);
+
+  useEffect(() => {
+    if (!isBrowser || !("speechSynthesis" in window)) return;
+
+    const loadVoices = () => {
+      const availableVoices = window.speechSynthesis.getVoices();
+      if (availableVoices.length > 0) {
+        setVoices(availableVoices);
+        setIsSpeechReady(true);
+      }
+    };
+
+    // Voices load asynchronously.
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+    loadVoices(); // Initial call in case they are already loaded.
+
+    return () => {
+      if (window.speechSynthesis) {
+        window.speechSynthesis.onvoiceschanged = null;
+      }
+    };
+  }, []); // This effect should only run once on mount.
 
   const getAudioContext = useCallback((): AudioContext | null => {
     if (!isBrowser) return null;
@@ -86,18 +110,62 @@ export const useAudio = () => {
     [getAudioContext]
   );
 
-  const speak = useCallback((text: string) => {
-    if (!isBrowser || !("speechSynthesis" in window)) {
-      console.warn("Web Speech API is not supported in this browser.");
-      return;
-    }
-    window.speechSynthesis.cancel();
+  const speak = useCallback(
+    (text: string) => {
+      if (!isBrowser || !("speechSynthesis" in window) || !isSpeechReady) {
+        if (!isSpeechReady) console.warn("Speech engine not ready, skipping.");
+        return;
+      }
+      window.speechSynthesis.cancel();
 
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.9;
-    utterance.pitch = 1;
-    window.speechSynthesis.speak(utterance);
-  }, []);
+      const utterance = new SpeechSynthesisUtterance(text);
+
+      // --- Intelligent Voice Selection ---
+      const englishVoices = voices.filter((v) => v.lang.startsWith("en-"));
+      let bestVoice: SpeechSynthesisVoice | null = null;
+
+      if (englishVoices.length > 0) {
+        // Define a ranked preference list for high-quality voices.
+        const voicePreferences = [
+          /google/i, // Google voices are often high quality.
+          /samantha|alex/i, // High-quality Apple voices.
+          /zira|david/i, // High-quality Microsoft voices.
+          /premium|enhanced|neural/i, // Keywords for quality.
+        ];
+
+        for (const preference of voicePreferences) {
+          const foundVoice = englishVoices.find((v) =>
+            preference.test(v.name.toLowerCase())
+          );
+          if (foundVoice) {
+            bestVoice = foundVoice;
+            break;
+          }
+        }
+
+        // Fallback to any local US English voice, then any English voice.
+        if (!bestVoice) {
+          bestVoice =
+            englishVoices.find((v) => v.lang === "en-US" && v.localService) ||
+            englishVoices[0];
+        }
+      }
+
+      // Only assign the voice if we found a suitable one.
+      // This prevents an issue in Firefox where assigning `null` on the first
+      // call (before voices are loaded) can cause the speech to fail silently.
+      if (bestVoice) {
+        utterance.voice = bestVoice;
+      }
+
+      // --- Tune for a softer, gentler tone ---
+      utterance.rate = 0.85; // Slightly slower and more deliberate.
+      utterance.pitch = 0.95; // Slightly deeper to reduce shrillness.
+
+      window.speechSynthesis.speak(utterance);
+    },
+    [voices, isSpeechReady]
+  );
 
   const startBackgroundMusic = useCallback(
     async (musicType: BackgroundMusicType, getIsCancelled?: () => boolean) => {
@@ -357,5 +425,11 @@ export const useAudio = () => {
     backgroundMusicNodesRef.current = null;
   }, [getAudioContext]);
 
-  return { playSound, speak, startBackgroundMusic, stopBackgroundMusic };
+  return {
+    playSound,
+    speak,
+    startBackgroundMusic,
+    stopBackgroundMusic,
+    isSpeechReady,
+  };
 };
