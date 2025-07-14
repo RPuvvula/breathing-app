@@ -1,4 +1,4 @@
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useState, useEffect } from "react";
 import { BackgroundMusicType } from "../types";
 
 const isBrowser = typeof window !== "undefined";
@@ -9,9 +9,135 @@ interface MusicNodes {
   intervalId?: ReturnType<typeof setInterval>;
 }
 
+// Helper to promisify the callback-based decodeAudioData
+const decodeAudioDataAsync = (
+  context: AudioContext,
+  arrayBuffer: ArrayBuffer
+): Promise<AudioBuffer> => {
+  return new Promise((resolve, reject) => {
+    context.decodeAudioData(arrayBuffer, resolve, reject);
+  });
+};
+
+// Helper to create a single harmonic for the Tibetan bowl
+const createBowlHarmonic = (
+  context: AudioContext,
+  masterGain: GainNode,
+  fundamental: number,
+  harmonic: number,
+  index: number
+): AudioNode[] => {
+  const osc = context.createOscillator();
+  const gain = context.createGain();
+
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(fundamental * harmonic, context.currentTime);
+
+  const amplitude = 0.3 / (index + 1);
+  const decay = 8 + Math.random() * 4;
+
+  gain.gain.setValueAtTime(0, context.currentTime);
+  gain.gain.linearRampToValueAtTime(amplitude, context.currentTime + 0.1);
+  gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + decay);
+
+  osc.connect(gain);
+  gain.connect(masterGain);
+
+  osc.start(context.currentTime);
+  osc.stop(context.currentTime + decay);
+
+  return [osc, gain];
+};
+
+// Map of sound profiles for one-shot tones
+const soundProfiles = {
+  inhale: {
+    freq: 660,
+    gain: 0.2,
+    duration: 0.15,
+    type: "sine" as OscillatorType,
+  },
+  exhale: {
+    freq: 440,
+    gain: 0.15,
+    duration: 0.2,
+    type: "sine" as OscillatorType,
+  },
+  chime: {
+    freq: 880,
+    gain: 0.4,
+    duration: 0.2,
+    type: "triangle" as OscillatorType,
+  },
+  hold: {
+    freq: 523.25,
+    gain: 0.3,
+    duration: 0.5,
+    type: "sine" as OscillatorType,
+  },
+  bell: {
+    freq: 523.25,
+    gain: 0.2,
+    duration: 3,
+    type: "sine" as OscillatorType,
+  },
+};
+
+// Reusable helper to play a simple tone
+const playOneShotTone = (
+  context: AudioContext,
+  output: AudioNode,
+  profile: (typeof soundProfiles)[keyof typeof soundProfiles]
+): AudioNode[] => {
+  const osc = context.createOscillator();
+  const gainNode = context.createGain();
+
+  osc.type = profile.type;
+  osc.frequency.setValueAtTime(profile.freq, context.currentTime);
+  gainNode.gain.setValueAtTime(profile.gain, context.currentTime);
+  gainNode.gain.exponentialRampToValueAtTime(
+    0.0001,
+    context.currentTime + profile.duration
+  );
+
+  osc.connect(gainNode);
+  gainNode.connect(output);
+  osc.start(context.currentTime);
+  osc.stop(context.currentTime + profile.duration);
+
+  return [osc, gainNode];
+};
+
 export const useAudio = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const backgroundMusicNodesRef = useRef<MusicNodes | null>(null);
+  const breathingBellTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [isSpeechReady, setIsSpeechReady] = useState(false);
+
+  useEffect(() => {
+    if (!isBrowser || !("speechSynthesis" in window)) return;
+
+    const loadVoices = () => {
+      const availableVoices = window.speechSynthesis.getVoices();
+      if (availableVoices.length > 0) {
+        setVoices(availableVoices);
+        setIsSpeechReady(true);
+        window.speechSynthesis.onvoiceschanged = null;
+      }
+    };
+
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+    loadVoices();
+
+    return () => {
+      if (window.speechSynthesis) {
+        window.speechSynthesis.onvoiceschanged = null;
+      }
+    };
+  }, []);
 
   const getAudioContext = useCallback((): AudioContext | null => {
     if (!isBrowser) return null;
@@ -32,72 +158,67 @@ export const useAudio = () => {
   }, []);
 
   const playSound = useCallback(
-    (type: "inhale" | "exhale" | "chime" | "hold") => {
+    (type: keyof typeof soundProfiles) => {
       const context = getAudioContext();
       if (!context) return;
+      const profile = soundProfiles[type];
+      if (!profile) return;
 
-      const oscillator = context.createOscillator();
-      const gainNode = context.createGain();
-
-      gainNode.connect(context.destination);
-      oscillator.connect(gainNode);
-
-      let freq = 440;
-      let duration = 0.1;
-      let gain = 0.3;
-
-      switch (type) {
-        case "inhale":
-          freq = 660;
-          gain = 0.2;
-          duration = 0.15;
-          oscillator.type = "sine";
-          break;
-        case "exhale":
-          freq = 440;
-          gain = 0.15;
-          duration = 0.2;
-          oscillator.type = "sine";
-          break;
-        case "chime":
-          freq = 880;
-          gain = 0.4;
-          duration = 0.2;
-          oscillator.type = "triangle";
-          break;
-        case "hold":
-          freq = 523.25;
-          gain = 0.3;
-          duration = 0.5;
-          oscillator.type = "sine";
-          break;
-      }
-
-      gainNode.gain.setValueAtTime(gain, context.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(
-        0.0001,
-        context.currentTime + duration
-      );
-
-      oscillator.frequency.setValueAtTime(freq, context.currentTime);
-      oscillator.start(context.currentTime);
-      oscillator.stop(context.currentTime + duration);
+      playOneShotTone(context, context.destination, profile);
     },
     [getAudioContext]
   );
 
-  const speak = useCallback((text: string) => {
-    if (!isBrowser || !("speechSynthesis" in window)) {
-      console.warn("Web Speech API is not supported in this browser.");
-      return;
-    }
-    window.speechSynthesis.cancel();
+  const speak = useCallback(
+    (text: string) => {
+      if (!isBrowser || !("speechSynthesis" in window) || !isSpeechReady) {
+        if (!isSpeechReady) console.warn("Speech engine not ready, skipping.");
+        return;
+      }
+      window.speechSynthesis.cancel();
 
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.9;
-    utterance.pitch = 1;
-    window.speechSynthesis.speak(utterance);
-  }, []);
+      const utterance = new SpeechSynthesisUtterance(text);
+
+      const englishVoices = voices.filter((v) => v.lang.startsWith("en-"));
+      let bestVoice: SpeechSynthesisVoice | null = null;
+
+      if (englishVoices.length > 0) {
+        const voicePreferences = [
+          /google/i,
+          /samantha|alex/i,
+          /zira|david/i,
+          /premium|enhanced|neural/i,
+        ];
+
+        for (const preference of voicePreferences) {
+          const foundVoice = englishVoices.find((v) =>
+            // FIX: Guard against v.name being null/undefined
+            preference.test((v.name || "").toLowerCase())
+          );
+          if (foundVoice) {
+            bestVoice = foundVoice;
+            break;
+          }
+        }
+
+        if (!bestVoice) {
+          bestVoice =
+            englishVoices.find((v) => v.lang === "en-US" && v.localService) ||
+            englishVoices[0];
+        }
+      }
+
+      if (bestVoice) {
+        utterance.voice = bestVoice;
+      }
+
+      utterance.rate = 0.85;
+      utterance.pitch = 0.95;
+
+      window.speechSynthesis.speak(utterance);
+    },
+    [voices, isSpeechReady]
+  );
 
   const startBackgroundMusic = useCallback(
     async (musicType: BackgroundMusicType, getIsCancelled?: () => boolean) => {
@@ -143,39 +264,20 @@ export const useAudio = () => {
 
         case BackgroundMusicType.TibetanSingingBowl:
           masterGain.gain.linearRampToValueAtTime(0.3, context.currentTime + 2);
-
           const playBowl = () => {
-            const now = context.currentTime;
-            const fundamental = 130 + Math.random() * 20; // Around C3 with variation
-
-            // Create multiple harmonics for rich sound
-            const harmonics = [1, 2.1, 3.2, 4.5, 6.1]; // Slightly detuned for realism
-
+            const fundamental = 130 + Math.random() * 20;
+            const harmonics = [1, 2.1, 3.2, 4.5, 6.1];
             harmonics.forEach((harmonic, index) => {
-              const osc = context.createOscillator();
-              const gain = context.createGain();
-
-              osc.type = "sine";
-              osc.frequency.setValueAtTime(fundamental * harmonic, now);
-
-              // Different envelope for each harmonic
-              const amplitude = 0.3 / (index + 1); // Higher harmonics are quieter
-              const decay = 8 + Math.random() * 4; // 8-12 second decay
-
-              gain.gain.setValueAtTime(0, now);
-              gain.gain.linearRampToValueAtTime(amplitude, now + 0.1);
-              gain.gain.exponentialRampToValueAtTime(0.001, now + decay);
-
-              osc.connect(gain);
-              gain.connect(masterGain);
-
-              osc.start(now);
-              osc.stop(now + decay);
-
-              allNodes.push(osc, gain);
+              const harmonicNodes = createBowlHarmonic(
+                context,
+                masterGain,
+                fundamental,
+                harmonic,
+                index
+              );
+              allNodes.push(...harmonicNodes);
             });
           };
-
           playBowl();
           intervalId = setInterval(playBowl, 12000 + Math.random() * 5000);
           break;
@@ -183,103 +285,59 @@ export const useAudio = () => {
         case BackgroundMusicType.BreathingBell:
           masterGain.gain.linearRampToValueAtTime(0.2, context.currentTime + 1);
 
-          const playBell = () => {
-            const now = context.currentTime;
-            const osc = context.createOscillator();
-            const gain = context.createGain();
-
-            osc.type = "sine";
-            osc.frequency.setValueAtTime(523.25, now); // C5
-
-            gain.gain.setValueAtTime(0, now);
-            gain.gain.linearRampToValueAtTime(0.2, now + 0.01);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 3);
-
-            osc.connect(gain);
-            gain.connect(masterGain);
-
-            osc.start(now);
-            osc.stop(now + 3);
-
-            allNodes.push(osc, gain);
-          };
-
-          // 4-7-8 breathing pattern: 4 sec in, 7 sec hold, 8 sec out
           let breathPhase = 0;
-          const breathPattern = [4000, 7000, 8000]; // milliseconds for each phase
-          let currentTimeout;
-
+          const breathPattern = [4000, 7000, 8000];
           const scheduleNextBell = () => {
-            playBell();
-            breathPhase = (breathPhase + 1) % 3;
-            currentTimeout = setTimeout(
+            if (isCancelled()) return;
+
+            const bellNodes = playOneShotTone(
+              context,
+              masterGain,
+              soundProfiles.bell
+            );
+            allNodes.push(...bellNodes);
+
+            const nextDelay = breathPattern[breathPhase];
+            breathPhase = (breathPhase + 1) % breathPattern.length;
+            breathingBellTimeoutRef.current = setTimeout(
               scheduleNextBell,
-              breathPattern[breathPhase]
+              nextDelay
             );
           };
-
-          scheduleNextBell(); // Start the breathing pattern
-
-          // Store the timeout reference for cleanup (you might want to store this differently)
-          intervalId = currentTimeout;
+          scheduleNextBell();
           break;
 
         case BackgroundMusicType.GentleRain:
-          try {
-            const response = await fetch("./audio/rain.mp3");
-            if (isCancelled()) return;
-
-            const arrayBuffer = await response.arrayBuffer();
-            if (isCancelled()) return;
-
-            const audioBuffer = await context.decodeAudioData(arrayBuffer);
-            if (isCancelled()) return;
-
-            const source = context.createBufferSource();
-            source.buffer = audioBuffer;
-            source.loop = true;
-
-            source.connect(masterGain);
-            source.start();
-
-            masterGain.gain.linearRampToValueAtTime(
-              0.08, // Lower volume for background
-              context.currentTime + 3
-            ); // Fade in
-            allNodes.push(source);
-          } catch (error) {
-            if (!isCancelled()) {
-              console.error(
-                "Error loading or playing local audio file:",
-                error
-              );
-            }
-            return;
-          }
-          break;
-
         case BackgroundMusicType.OmChant:
           try {
-            const response = await fetch("./audio/om.mp3");
-            if (isCancelled()) return;
+            const filePath =
+              musicType === BackgroundMusicType.GentleRain
+                ? "./audio/rain.mp3"
+                : "./audio/om.mp3";
+            const volume =
+              musicType === BackgroundMusicType.GentleRain ? 0.08 : 0.05;
 
+            const response = await fetch(filePath);
+            if (isCancelled()) return;
             const arrayBuffer = await response.arrayBuffer();
             if (isCancelled()) return;
 
-            const audioBuffer = await context.decodeAudioData(arrayBuffer);
+            const audioBuffer = await decodeAudioDataAsync(
+              context,
+              arrayBuffer
+            );
             if (isCancelled()) return;
 
             const source = context.createBufferSource();
             source.buffer = audioBuffer;
             source.loop = true;
-
             source.connect(masterGain);
             source.start();
 
             masterGain.gain.linearRampToValueAtTime(
-              0.05, // Lower volume for background
+              volume,
               context.currentTime + 3
-            ); // Fade in
+            );
             allNodes.push(source);
           } catch (error) {
             if (!isCancelled()) {
@@ -294,9 +352,6 @@ export const useAudio = () => {
       }
 
       if (isCancelled()) {
-        // If the component unmounted while we were fetching/decoding,
-        // we might have already started some audio nodes. We need to stop them now,
-        // because stopBackgroundMusic() was called on an empty ref.
         allNodes.forEach((node) => {
           if ("stop" in node && typeof node.stop === "function") {
             try {
@@ -326,9 +381,12 @@ export const useAudio = () => {
     const music = backgroundMusicNodesRef.current;
     if (!context || !music) return;
 
+    // FIX: Defensively clear both timeout and interval
+    if (breathingBellTimeoutRef.current) {
+      clearTimeout(breathingBellTimeoutRef.current);
+      breathingBellTimeoutRef.current = null;
+    }
     if (music.intervalId) {
-      // NOTE: The BreathingBell implementation has a bug where its timeout is not
-      // correctly stored or cleared. For now, we only clear intervals.
       clearInterval(music.intervalId);
     }
 
@@ -357,5 +415,11 @@ export const useAudio = () => {
     backgroundMusicNodesRef.current = null;
   }, [getAudioContext]);
 
-  return { playSound, speak, startBackgroundMusic, stopBackgroundMusic };
+  return {
+    playSound,
+    speak,
+    startBackgroundMusic,
+    stopBackgroundMusic,
+    isSpeechReady,
+  };
 };
