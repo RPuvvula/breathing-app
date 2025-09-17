@@ -132,18 +132,18 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
         setPhase(Phase.Breathing);
       }, 3000);
     } else if (phase === Phase.Breathing) {
+      if (breathCount >= breathsPerRound * 2) {
+        setPhase(Phase.Retention);
+        return; // Exit early to prevent playing the extra sound
+      }
       if (breathCount === 0) {
         speakIfEnabled("Begin breathing.");
       }
       playSound(breathCount % 2 === 0 ? "inhale" : "exhale");
-      if (breathCount >= breathsPerRound * 2) {
-        setPhase(Phase.Retention);
-      } else {
-        interval = setTimeout(
-          () => setBreathCount((c) => c + 1),
-          breathDuration
-        );
-      }
+      interval = setTimeout(
+        () => setBreathCount((c) => c + 1),
+        breathDuration
+      );
     } else if (phase === Phase.Retention) {
       if (timer === 0) {
         // only speak on first render of this phase
